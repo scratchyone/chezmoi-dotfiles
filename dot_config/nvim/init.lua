@@ -12,8 +12,50 @@ end
 vim.opt.rtp:prepend(lazypath)
 
 require("lazy").setup({ 'RaafatTurki/hex.nvim',
-  -- Detect tabstop and shiftwidth automatically
+  -- Detect tabstop and shiftwidth automatcally
   'tpope/vim-sleuth',
+  {
+    'chipsenkbeil/distant.nvim',
+    branch = 'v0.3',
+    config = function()
+      require('distant'):setup()
+    end
+  },
+  {
+    'windwp/nvim-autopairs',
+    event = "InsertEnter",
+    opts = {} -- this is equalent to setup({}) function
+  },
+  {
+    "folke/flash.nvim",
+    event = "VeryLazy",
+    ---@type Flash.Config
+    opts = {
+      modes = {
+        char = {
+          enabled = false
+        }
+      }
+    },
+    -- stylua: ignore
+    keys = {
+      { "s",     mode = { "n", "x", "o" }, function() require("flash").jump() end,              desc = "Flash" },
+      { "S",     mode = { "n", "x", "o" }, function() require("flash").treesitter() end,        desc = "Flash Treesitter" },
+      { "r",     mode = "o",               function() require("flash").remote() end,            desc = "Remote Flash" },
+      { "R",     mode = { "o", "x" },      function() require("flash").treesitter_search() end, desc = "Treesitter Search" },
+      { "<c-s>", mode = { "c" },           function() require("flash").toggle() end,            desc = "Toggle Flash Search" },
+    },
+  },
+  {
+    'jinh0/eyeliner.nvim',
+    config = function()
+      require 'eyeliner'.setup {
+        highlight_on_key = true, -- show highlights only after keypress
+        dim = true               -- dim all other characters if set to true (recommended!)
+      }
+    end
+  },
+  { 'echasnovski/mini.surround', version = '*' },
   'nvim-tree/nvim-web-devicons',
   {
     "olimorris/onedarkpro.nvim",
@@ -125,7 +167,7 @@ require("lazy").setup({ 'RaafatTurki/hex.nvim',
   },
 
   -- Useful plugin to show you pending keybinds.
-  { 'folke/which-key.nvim',  opts = {} },
+  { 'folke/which-key.nvim',      opts = {} },
   {
     -- Adds git related signs to the gutter, as well as utilities for managing changes
     'lewis6991/gitsigns.nvim',
@@ -138,6 +180,7 @@ require("lazy").setup({ 'RaafatTurki/hex.nvim',
         topdelete = { text = '‾' },
         changedelete = { text = '~' },
       },
+      auto_attach = true,
       on_attach = function(bufnr)
         local gs = package.loaded.gitsigns
 
@@ -235,7 +278,7 @@ require("lazy").setup({ 'RaafatTurki/hex.nvim',
       'nvim-lua/plenary.nvim',
       -- Fuzzy Finder Algorithm which requires local dependencies to be built.
       -- Only load if `make` is available. Make sure you have the system
-      -- requirements installed.
+      -- requirements installed
       {
         'nvim-telescope/telescope-fzf-native.nvim',
         -- NOTE: If you are having trouble with this installation,
@@ -383,6 +426,8 @@ vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagn
 local map = vim.api.nvim_set_keymap
 local opts = { noremap = true, silent = true }
 
+
+
 -- Move to previous/next
 map('n', '<A-,>', '<Cmd>BufferPrevious<CR>', opts)
 map('n', '<A-.>', '<Cmd>BufferNext<CR>', opts)
@@ -444,6 +489,8 @@ require('telescope').setup {
     },
   },
 }
+
+require('mini.surround').setup()
 
 -- Enable telescope fzf native, if installed
 pcall(require('telescope').load_extension, 'fzf')
@@ -551,6 +598,8 @@ vim.defer_fn(function()
           ['if'] = '@function.inner',
           ['ac'] = '@class.outer',
           ['ic'] = '@class.inner',
+          ['ab'] = '@block.outer',
+          ['ib'] = '@block.inner',
         },
       },
       move = {
