@@ -11,7 +11,47 @@ if not vim.loop.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
-require("lazy").setup({ 'RaafatTurki/hex.nvim',
+require("lazy").setup({
+  'RaafatTurki/hex.nvim',
+  'JoosepAlviste/nvim-ts-context-commentstring',
+  'RRethy/vim-illuminate',
+  {
+    "lukas-reineke/headlines.nvim",
+    dependencies = "nvim-treesitter/nvim-treesitter",
+    opts = {}
+  },
+  {
+    'rcarriga/nvim-notify',
+    opts = {},
+    config = function()
+      vim.notify = require("notify")
+    end
+  },
+  {
+    'windwp/nvim-ts-autotag',
+    opts = {},
+  },
+  {
+    'nvimtools/none-ls.nvim',
+    config = function()
+      local null_ls = require("null-ls")
+      require("null-ls").setup({
+        sources = {
+          null_ls.builtins.diagnostics.pylint.with({
+            diagnostics_postprocess = function(diagnostic)
+              diagnostic.code = diagnostic.message_id
+            end,
+          }),
+          null_ls.builtins.formatting.isort,
+          null_ls.builtins.formatting.black,
+          null_ls.builtins.code_actions.eslint,
+          null_ls.builtins.code_actions.xo,
+          null_ls.builtins.formatting.prettier
+        }
+      })
+    end,
+    requires = { "nvim-lua/plenary.nvim" },
+  },
   -- Detect tabstop and shiftwidth automatcally
   'tpope/vim-sleuth',
   {
@@ -22,9 +62,46 @@ require("lazy").setup({ 'RaafatTurki/hex.nvim',
     end
   },
   {
+    'mrcjkb/rustaceanvim',
+    version = '^4', -- Recommended
+    ft = { 'rust' },
+  },
+  {
     'windwp/nvim-autopairs',
     event = "InsertEnter",
     opts = {} -- this is equalent to setup({}) function
+  },
+  {
+    "folke/todo-comments.nvim",
+    dependencies = { "nvim-lua/plenary.nvim" },
+    opts = {
+      -- your configuration comes here
+      -- or leave it empty to use the default settings
+      -- refer to the configuration section below
+    },
+  },
+  {
+    "zbirenbaum/neodim",
+    event = "LspAttach",
+    config = function()
+      require("neodim").setup({
+        refresh_delay = 75,
+        alpha = 0.75,
+        blend_color = "#000000",
+        hide = {
+          -- underline = true,
+          -- virtual_text = true,
+          -- signs = true,
+        },
+        regex = {
+          "[uU]nused",
+          "[nN]ever [rR]ead",
+          "[nN]ot [rR]ead",
+        },
+        priority = 128,
+        disable = {},
+      })
+    end
   },
   {
     "folke/flash.nvim",
@@ -81,11 +158,6 @@ require("lazy").setup({ 'RaafatTurki/hex.nvim',
       "nvim-telescope/telescope.nvim", -- optional
     },
     config = true
-  },
-  {
-    "m4xshen/hardtime.nvim",
-    dependencies = { "MunifTanjim/nui.nvim", "nvim-lua/plenary.nvim" },
-    opts = {}
   },
   {
     'romgrk/barbar.nvim',
@@ -299,10 +371,89 @@ require("lazy").setup({ 'RaafatTurki/hex.nvim',
     },
     build = ':TSUpdate',
   },
+  {
+    -- NOTE: Yes, you can install new plugins here!
+    'mfussenegger/nvim-dap',
+    -- NOTE: And you can specify dependencies as well
+    dependencies = {
+      -- Creates a beautiful debugger UI
+      'rcarriga/nvim-dap-ui',
 
+      -- Installs the debug adapters for you
+      'williamboman/mason.nvim',
+      'jay-babu/mason-nvim-dap.nvim',
+
+      -- Add your own debuggers here
+      'leoluz/nvim-dap-go',
+      { 'theHamsta/nvim-dap-virtual-text', opts = {} },
+    },
+    config = function()
+      dap = require 'dap'
+      dapui = require 'dapui'
+
+      require('mason-nvim-dap').setup {
+        -- Makes a best effort to setup the various debuggers with
+        -- reasonable debug configurations
+        automatic_setup = true,
+
+        -- You can provide additional configuration to the handlers,
+        -- see mason-nvim-dap README for more information
+        handlers = {},
+
+        -- You'll need to check that you have the required things installed
+        -- online, please don't ask me how to install them :)
+        ensure_installed = {
+          -- Update this to ensure that you have the debuggers for the langs you want
+          'delve',
+        },
+      }
+      -- Basic debugging keymaps, feel free to change to your liking!
+      vim.keymap.set('n', '<F5>', dap.continue, { desc = 'Debug: Start/Continue' })
+      vim.keymap.set('n', '<F1>', dap.step_into, { desc = 'Debug: Step Into' })
+      vim.keymap.set('n', '<F2>', dap.step_over, { desc = 'Debug: Step Over' })
+      vim.keymap.set('n', '<F3>', dap.step_out, { desc = 'Debug: Step Out' })
+      vim.keymap.set('n', '<leader>b', dap.toggle_breakpoint, { desc = 'Debug: Toggle Breakpoint' })
+      vim.keymap.set('n', '<leader>B', function()
+        dap.set_breakpoint(vim.fn.input 'Breakpoint condition: ')
+      end, { desc = 'Debug: Set Breakpoint' })
+
+      -- Dap UI setup
+      -- For more information, see |:help nvim-dap-ui|
+      dapui.setup {
+        -- Set icons to characters that are more likely to work in every terminal.
+        --    Feel free to remove or use ones that you like more! :)
+        --    Don't feel like these are good choices.
+        icons = { expanded = '▾', collapsed = '▸', current_frame = '*' },
+        controls = {
+          icons = {
+            pause = '⏸',
+            play = '▶',
+            step_into = '⏎',
+            step_over = '⏭',
+            step_out = '⏮',
+            step_back = 'b',
+            run_last = '▶▶',
+            terminate = '⏹',
+            disconnect = '⏏',
+          },
+        },
+      }
+
+      -- Toggle to see last session result. Without this, you can't see session output in case of unhandled exception.
+      vim.keymap.set('n', '<F7>', dapui.toggle, { desc = 'Debug: See last session result.' })
+
+      dap.listeners.after.event_initialized['dapui_config'] = dapui.open
+      dap.listeners.before.event_terminated['dapui_config'] = dapui.close
+      dap.listeners.before.event_exited['dapui_config'] = dapui.close
+
+      -- Install golang specific config
+      require('dap-go').setup()
+    end,
+  },
   {
     'neovim/nvim-lspconfig',
     config = function()
+      require('neodev').setup()
       -- Switch for controlling whether you want autoformatting.
       --  Use :KickstartFormatToggle to toggle autoformatting on or off
       local format_is_enabled = true
@@ -372,6 +523,16 @@ require("lazy").setup({ 'RaafatTurki/hex.nvim',
 
 
 })
+
+vim.notify = require("notify")
+
+-- Prioritize showing errors over warnings
+vim.lsp.handlers['textDocument/publishDiagnostics'] = vim.lsp.with(
+  vim.lsp.diagnostic.on_publish_diagnostics, {
+    severity_sort = true,
+  }
+)
+
 
 -- Setup color scheme
 vim.cmd("colorscheme onedark")
@@ -460,10 +621,10 @@ map('n', '<A-c>', '<Cmd>BufferClose<CR>', opts)
 -- Magic buffer-picking mode
 map('n', '<C-p>', '<Cmd>BufferPick<CR>', opts)
 -- Sort automatically by...
-map('n', '<Space>bb', '<Cmd>BufferOrderByBufferNumber<CR>', opts)
-map('n', '<Space>bd', '<Cmd>BufferOrderByDirectory<CR>', opts)
-map('n', '<Space>bl', '<Cmd>BufferOrderByLanguage<CR>', opts)
-map('n', '<Space>bw', '<Cmd>BufferOrderByWindowNumber<CR>', opts)
+-- map('n', '<Space>bb', '<Cmd>BufferOrderByBufferNumber<CR>', opts)
+-- map('n', '<Space>bd', '<Cmd>BufferOrderByDirectory<CR>', opts)
+-- map('n', '<Space>bl', '<Cmd>BufferOrderByLanguage<CR>', opts)
+-- map('n', '<Space>bw', '<Cmd>BufferOrderByWindowNumber<CR>', opts)
 
 
 -- [[ Highlight on yank ]]
@@ -637,7 +798,7 @@ end, 0)
 
 -- [[ Configure LSP ]]
 --  This function gets run when an LSP connects to a particular buffer.
-local on_attach = function(_, bufnr)
+local on_attach = function(client, bufnr)
   -- NOTE: Remember that lua is a real programming language, and as such it is possible
   -- to define small helper and utility functions so you don't have to repeat yourself
   -- many times.
@@ -723,16 +884,13 @@ local servers = {
 
   lua_ls = {
     Lua = {
-      workspace = { checkThirdParty = false },
+      -- workspace = { checkThirdParty = false },
       telemetry = { enable = false },
       -- NOTE: toggle below to ignore Lua_LS's noisy `missing-fields` warnings
       -- diagnostics = { disable = { 'missing-fields' } },
     },
   },
 }
-
--- Setup neovim lua configuration
-require('neodev').setup()
 
 -- nvim-cmp supports additional completion capabilities, so broadcast that to servers
 local capabilities = vim.lsp.protocol.make_client_capabilities()
@@ -807,6 +965,12 @@ cmp.setup {
     { name = 'path' },
   },
 }
+
+vim.keymap.set('n', '<leader>b', dap.toggle_breakpoint, { desc = 'Debug: Toggle Breakpoint' })
+vim.keymap.set('n', '<leader>B', function()
+  dap.set_breakpoint(vim.fn.input 'Breakpoint condition: ')
+end, { desc = 'Debug: Set Breakpoint' })
+
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
